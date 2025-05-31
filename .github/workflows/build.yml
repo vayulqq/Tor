@@ -1,0 +1,48 @@
+name: Build AntiTor Windows x64
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    name: Build AntiTor Executable
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: Install MinGW
+      run: |
+        choco install mingw -y --force
+        echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin" >> $GITHUB_PATH
+
+    - name: Compile AntiTor
+      run: |
+        g++ -std=c++17 -static -static-libgcc -static-libstdc++ -mwindows -o AntiTor.exe src/main.cpp -lshlwapi -lversion
+        if not exist AntiTor.exe (
+          echo "::error::Compilation failed!"
+          exit 1
+        )
+
+    - name: Create distribution package
+      run: |
+        mkdir dist
+        copy AntiTor.exe dist\
+        copy torrc.txt dist\
+        7z a AntiTor-Windows-x64.zip .\dist\*
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: AntiTor-Windows-x64
+        path: AntiTor-Windows-x64.zip
