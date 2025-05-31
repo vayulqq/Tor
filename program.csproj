@@ -9,6 +9,6 @@
     <PublishTrimmed>true</PublishTrimmed>
     <SelfContained>true</SelfContained>
     <PlatformTarget>x64</PlatformTarget>
-    <AssemblyName>TorInstaller</AssemblyName>
+    <AssemblyName>AntiTor</AssemblyName>
   </PropertyGroup>
 </Project>
