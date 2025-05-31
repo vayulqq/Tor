@@ -1,0 +1,36 @@
+name: Build Windows x64 Application
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: Install necessary packages
+      run: |
+        choco install mingw -y --force
+
+    - name: Compile with MinGW (Static linking)
+      shell: cmd
+      run: |
+        set PATH=C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%
+        g++ -std=c++17 -static -static-libgcc -static-libstdc++ -mwindows -o tor_manager.exe main.cpp -lshlwapi -lversion
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: Windows-x64-Build
+        path: tor_manager.exe
