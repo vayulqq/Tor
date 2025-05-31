@@ -10,7 +10,6 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    name: Build AntiTor Executable
     
     steps:
     - name: Checkout repository
@@ -22,19 +21,23 @@ jobs:
         arch: x64
 
     - name: Install MinGW
-      run: |
-        choco install mingw -y --force
-        echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin" >> $GITHUB_PATH
+      run: choco install mingw -y --force
+      shell: cmd
+
+    - name: Add MinGW to PATH
+      run: echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin" >> $GITHUB_PATH
 
     - name: Compile AntiTor
+      shell: cmd
       run: |
         g++ -std=c++17 -static -static-libgcc -static-libstdc++ -mwindows -o AntiTor.exe src/main.cpp -lshlwapi -lversion
         if not exist AntiTor.exe (
-          echo "::error::Compilation failed!"
-          exit 1
+          echo Compilation failed!
+          exit /b 1
         )
 
     - name: Create distribution package
+      shell: cmd
       run: |
         mkdir dist
         copy AntiTor.exe dist\
