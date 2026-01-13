@@ -1,51 +1,34 @@
-name: Build AntiTor Windows x64
+name: Unpack Nova Exe
 
-on:
-  push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
-  workflow_dispatch:
+on: workflow_dispatch  # Позволяет запускать вручную по кнопке
 
 jobs:
-  build:
-    runs-on: windows-latest
-    
+  extract:
+    runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      # 1. Установка Python 3.13.11
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.11'
 
-    - name: Set up MSVC
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: x64
+      # 2. Скачивание файлов
+      - name: Download files
+        run: |
+          # Скачиваем скрипт (используем raw ссылку)
+          wget https://raw.githubusercontent.com/extremecoders-re/pyinstxtractor/master/pyinstxtractor.py
+          
+          # Скачиваем Nova.exe
+          wget https://github.com/confeden/Nova/releases/download/v0.997/Nova.exe
 
-    - name: Install MinGW
-      run: choco install mingw -y --force
-      shell: cmd
+      # 3. Запуск распаковки
+      - name: Run PyInstxtractor
+        run: python pyinstxtractor.py Nova.exe
 
-    - name: Add MinGW to PATH
-      run: echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin" >> $GITHUB_PATH
-
-    - name: Compile AntiTor
-      shell: cmd
-      run: |
-        g++ -std=c++17 -static -static-libgcc -static-libstdc++ -mwindows -o AntiTor.exe src/main.cpp -lshlwapi -lversion
-        if not exist AntiTor.exe (
-          echo Compilation failed!
-          exit /b 1
-        )
-
-    - name: Create distribution package
-      shell: cmd
-      run: |
-        mkdir dist
-        copy AntiTor.exe dist\
-        copy torrc.txt dist\
-        7z a AntiTor-Windows-x64.zip .\dist\*
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: AntiTor-Windows-x64
-        path: AntiTor-Windows-x64.zip
+      # 4. Загрузка артефактов (папка Nova.exe_extracted)
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Extracted-Files
+          path: Nova.exe_extracted/
