@@ -1,34 +1,41 @@
-name: Unpack Nova Exe
+name: Analyze Nova Exe
 
-on: workflow_dispatch  # Позволяет запускать вручную по кнопке
+on: workflow_dispatch
 
 jobs:
-  extract:
+  analyze:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Установка Python 3.13.11
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13.11'
+      - name: Download Nova.exe
+        run: wget https://github.com/confeden/Nova/releases/download/v0.997/Nova.exe
 
-      # 2. Скачивание файлов
-      - name: Download files
+      - name: Install dependencies
+        run: sudo apt-get install -y file binutils
+
+      # 1. Проверяем тип файла
+      - name: Check File Type
+        run: file Nova.exe
+
+      # 2. Ищем строки, указывающие на Python, Nuitka или .NET
+      - name: Search for Signatures
         run: |
-          # Скачиваем скрипт (используем raw ссылку)
-          wget https://raw.githubusercontent.com/extremecoders-re/pyinstxtractor/master/pyinstxtractor.py
+          echo "Checking for Python..."
+          strings Nova.exe | grep -i "python" | head -n 5 || echo "No Python strings found"
           
-          # Скачиваем Nova.exe
-          wget https://github.com/confeden/Nova/releases/download/v0.997/Nova.exe
+          echo "Checking for Nuitka..."
+          strings Nova.exe | grep -i "nuitka" | head -n 5 || echo "No Nuitka strings found"
+          
+          echo "Checking for .NET/C#..."
+          strings Nova.exe | grep -i "assembly" | head -n 5 || echo "No .NET strings found"
 
-      # 3. Запуск распаковки
-      - name: Run PyInstxtractor
-        run: python pyinstxtractor.py Nova.exe
+      # 3. Пробуем распаковать как обычный архив (если это SFX)
+      - name: Try 7zip Extraction
+        run: 7z x Nova.exe -oextracted_7z || echo "Not a 7zip archive"
 
-      # 4. Загрузка артефактов (папка Nova.exe_extracted)
-      - name: Upload Artifacts
+      - name: Upload Logs (Optional)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Extracted-Files
-          path: Nova.exe_extracted/
+          name: analysis-logs
+          path: extracted_7z/
